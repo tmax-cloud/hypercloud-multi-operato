@@ -1,0 +1,7 @@
+domain: multi.tmax.io
+layout: go.kubebuilder.io/v2
+projectName: hypercloud4-multi
+repo: multi.tmax.io
+version: 3-alpha
+plugins:
+  go.sdk.operatorframework.io/v2-alpha: {}
