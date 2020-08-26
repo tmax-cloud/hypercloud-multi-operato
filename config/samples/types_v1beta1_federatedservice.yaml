@@ -1,0 +1,7 @@
+apiVersion: types.multi.tmax.io/v1beta1
+kind: FederatedService
+metadata:
+  name: federatedservice-sample
+spec:
+  # Add fields here
+  foo: bar

@@ -1,0 +1,24 @@
+# permissions for end users to edit federatedservices.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: federatedservice-editor-role
+rules:
+- apiGroups:
+  - types.multi.tmax.io
+  resources:
+  - federatedservices
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - types.multi.tmax.io
+  resources:
+  - federatedservices/status
+  verbs:
+  - get

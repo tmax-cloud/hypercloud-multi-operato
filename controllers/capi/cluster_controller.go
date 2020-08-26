@@ -45,7 +45,6 @@ type ClusterReconciler struct {
 func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reqLogger := r.Log.WithValues("Cluster", req.NamespacedName)
-	reqLogger.Info("Reconciling capi/Cluster")
 	// your logic here
 
 	//catch cluster

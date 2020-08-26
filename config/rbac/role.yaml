@@ -54,3 +54,23 @@ rules:
   - post
   - update
   - watch
+- apiGroups:
+  - multiclusterdns.kubefed.io
+  resources:
+  - domains
+  - servicednsrecords
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - post
+  - watch
+- apiGroups:
+  - types.kubefed.io
+  resources:
+  - federatedservices
+  verbs:
+  - get
+  - list
+  - watch

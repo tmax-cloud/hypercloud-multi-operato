@@ -2,6 +2,10 @@ domain: multi.tmax.io
 layout: go.kubebuilder.io/v2
 projectName: hypercloud4-multi
 repo: multi.tmax.io
+resources:
+- group: types
+  kind: FederatedService
+  version: v1beta1
 version: 3-alpha
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}
