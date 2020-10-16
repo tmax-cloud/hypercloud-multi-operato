@@ -32,10 +32,13 @@ import (
 	fedv1b1 "sigs.k8s.io/kubefed/pkg/apis/core/v1beta1"
 	fedmultiv1a1 "sigs.k8s.io/kubefed/pkg/apis/multiclusterdns/v1alpha1"
 
-	typesv1beta1 "multi.tmax.io/api/v1beta1"
+	typesv1beta1 "multi.tmax.io/apis/external/v1beta1"
+	hyperv1 "multi.tmax.io/apis/hyper/v1"
 	secretController "multi.tmax.io/controllers"
 	clusterController "multi.tmax.io/controllers/capi"
 	federatedServiceController "multi.tmax.io/controllers/fed"
+	hypercontroller "multi.tmax.io/controllers/hyper"
+	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1alpha3"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -56,6 +59,10 @@ func init() {
 	utilruntime.Must(fedmultiv1a1.AddToScheme(scheme))
 
 	utilruntime.Must(typesv1beta1.AddToScheme(scheme))
+
+	utilruntime.Must(hyperv1.AddToScheme(scheme))
+
+	utilruntime.Must(controlplanev1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -104,6 +111,22 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "fed/federatedserviceController")
+		os.Exit(1)
+	}
+	if err = (&federatedServiceController.KubeFedClusterReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controller").WithName("fed/kubefedclusterController"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "fed/kubefedclusterController")
+		os.Exit(1)
+	}
+	if err = (&hypercontroller.HyperClusterResourcesReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("HyperClusterResources"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "HyperClusterResources")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

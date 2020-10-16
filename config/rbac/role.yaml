@@ -41,6 +41,54 @@ rules:
   - patch
   - update
 - apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - machinedeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - machinedeployments/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - kubeadmcontrolplanes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - controlplane.cluster.x-k8s.io
+  resources:
+  - kubeadmcontrolplanes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - core.kubefed.io
+  resources:
+  - kubefedclusters
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - core.kubefed.io
   resources:
   - kubefedclusters
@@ -54,6 +102,26 @@ rules:
   - post
   - update
   - watch
+- apiGroups:
+  - hyper.multi.tmax.io
+  resources:
+  - hyperclusterresources
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - hyper.multi.tmax.io
+  resources:
+  - hyperclusterresources/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - multiclusterdns.kubefed.io
   resources:

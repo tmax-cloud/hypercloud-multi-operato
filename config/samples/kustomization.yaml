@@ -1,4 +1,4 @@
 ## Append samples you want in your CSV to this file as resources ##
 resources:
-- types_v1beta1_federatedservice.yaml
+- hyper_v1_hyperclusterresources.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

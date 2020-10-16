@@ -26,7 +26,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	typesv1beta1 "multi.tmax.io/api/v1beta1"
+	typesv1beta1 "multi.tmax.io/apis/external/v1beta1"
 	fedmultiv1a1 "sigs.k8s.io/kubefed/pkg/apis/multiclusterdns/v1alpha1"
 )
 

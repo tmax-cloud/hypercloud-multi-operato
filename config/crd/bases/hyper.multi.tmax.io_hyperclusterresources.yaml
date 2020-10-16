@@ -1,0 +1,117 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: hyperclusterresources.hyper.multi.tmax.io
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.provider
+    description: provider
+    name: Provider
+    type: string
+  - JSONPath: .spec.version
+    description: k8s version
+    name: Version
+    type: string
+  - JSONPath: .status.ready
+    description: is running
+    name: Ready
+    type: string
+  - JSONPath: .status.masterNum
+    description: replica number of master
+    name: MasterNum
+    type: string
+  - JSONPath: .status.masterRun
+    description: running of master
+    name: MasterRun
+    type: string
+  - JSONPath: .status.workerNum
+    description: replica number of worker
+    name: WorkerNum
+    type: string
+  - JSONPath: .status.workerRun
+    description: running of worker
+    name: WorkerRun
+    type: string
+  group: hyper.multi.tmax.io
+  names:
+    categories:
+    - hypercloud4-multi
+    kind: HyperClusterResources
+    listKind: HyperClusterResourcesList
+    plural: hyperclusterresources
+    shortNames:
+    - hcr
+    singular: hyperclusterresources
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: HyperClusterResources is the Schema for the hyperclusterresources
+        API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: HyperClusterResourcesSpec defines the desired state of HyperClusterResources
+          properties:
+            provider:
+              description: INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+              type: string
+            version:
+              type: string
+          type: object
+        status:
+          description: HyperClusterResourcesStatus defines the observed state of HyperClusterResources
+          properties:
+            masterNum:
+              type: integer
+            masterRun:
+              type: integer
+            ready:
+              description: INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster
+              type: boolean
+            resources:
+              items:
+                properties:
+                  name:
+                    type: string
+                  running:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              type: array
+            workerNum:
+              type: integer
+            workerRun:
+              type: integer
+          type: object
+      type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
