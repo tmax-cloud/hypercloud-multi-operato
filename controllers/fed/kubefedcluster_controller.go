@@ -79,7 +79,7 @@ func (r *KubeFedClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 }
 
 func (r *KubeFedClusterReconciler) deleteHcr(key types.NamespacedName) error {
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 	if err := r.Get(context.TODO(), key, hcr); err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (r *KubeFedClusterReconciler) deleteHcr(key types.NamespacedName) error {
 }
 
 func (r *KubeFedClusterReconciler) createHcr(key types.NamespacedName, kfc *fedcore.KubeFedCluster) error {
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 	hcr.Name = key.Name
 	hcr.Namespace = key.Namespace
 
@@ -115,7 +115,7 @@ func (r *KubeFedClusterReconciler) createHcr(key types.NamespacedName, kfc *fedc
 }
 
 func (r *KubeFedClusterReconciler) isHcr(key types.NamespacedName) error {
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 	if err := r.Get(context.TODO(), key, hcr); err != nil {
 		if errors.IsNotFound(err) {
 			return err

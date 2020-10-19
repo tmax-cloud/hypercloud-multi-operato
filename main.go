@@ -123,10 +123,10 @@ func main() {
 	}
 	if err = (&hypercontroller.HyperClusterResourcesReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("HyperClusterResources"),
+		Log:    ctrl.Log.WithName("controllers").WithName("HyperClusterResource"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HyperClusterResources")
+		setupLog.Error(err, "unable to create controller", "controller", "HyperClusterResource")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

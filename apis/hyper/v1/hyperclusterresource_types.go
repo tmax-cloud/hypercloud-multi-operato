@@ -23,8 +23,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// HyperClusterResourcesSpec defines the desired state of HyperClusterResources
-type HyperClusterResourcesSpec struct {
+// HyperClusterResourceSpec defines the desired state of HyperClusterResources
+type HyperClusterResourceSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	Provider  string `json:"provider,omitempty"`
 	Version   string `json:"version,omitempty"`
@@ -33,7 +33,7 @@ type HyperClusterResourcesSpec struct {
 }
 
 // HyperClusterResourcesStatus defines the observed state of HyperClusterResources
-type HyperClusterResourcesStatus struct {
+type HyperClusterResourceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	Ready     bool           `json:"ready,omitempty"`
 	MasterRun int            `json:"masterRun,omitempty"`
@@ -52,22 +52,22 @@ type HyperClusterResourcesStatus struct {
 // +kubebuilder:printcolumn:name="WorkerNum",type="string",JSONPath=".spec.workerNum",description="replica number of worker"
 // +kubebuilder:printcolumn:name="WorkerRun",type="string",JSONPath=".status.workerRun",description="running of worker"
 
-// HyperClusterResources is the Schema for the hyperclusterresources API
-type HyperClusterResources struct {
+// HyperClusterResource is the Schema for the hyperclusterresources API
+type HyperClusterResource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HyperClusterResourcesSpec   `json:"spec,omitempty"`
-	Status HyperClusterResourcesStatus `json:"status,omitempty"`
+	Spec   HyperClusterResourceSpec   `json:"spec,omitempty"`
+	Status HyperClusterResourceStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// HyperClusterResourcesList contains a list of HyperClusterResources
-type HyperClusterResourcesList struct {
+// HyperClusterResourceList contains a list of HyperClusterResource
+type HyperClusterResourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []HyperClusterResources `json:"items"`
+	Items           []HyperClusterResource `json:"items"`
 }
 
 type ResourceType struct {
@@ -77,5 +77,5 @@ type ResourceType struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&HyperClusterResources{}, &HyperClusterResourcesList{})
+	SchemeBuilder.Register(&HyperClusterResource{}, &HyperClusterResourceList{})
 }

@@ -1,5 +1,5 @@
 apiVersion: hyper.multi.tmax.io/v1
-kind: HyperClusterResources
+kind: HyperClusterResource
 metadata:
   name: hyperclusterresources-sample
 spec:

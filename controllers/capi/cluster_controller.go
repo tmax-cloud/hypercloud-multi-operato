@@ -155,7 +155,7 @@ func (r *ClusterReconciler) patchSecret(name string, status string) error {
 }
 
 func (r *ClusterReconciler) patchHcr(key types.NamespacedName, cluster *clusterv1.Cluster) {
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 
 	if err := r.Get(context.TODO(), key, hcr); err != nil {
 		r.Log.Error(err, "get hcr error")
@@ -171,7 +171,7 @@ func (r *ClusterReconciler) patchHcr(key types.NamespacedName, cluster *clusterv
 }
 
 func (r *ClusterReconciler) deleteHcr(key types.NamespacedName) error {
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 	if err := r.Get(context.TODO(), key, hcr); err != nil {
 		if errors.IsNotFound(err) {
 			return nil
@@ -187,7 +187,7 @@ func (r *ClusterReconciler) deleteHcr(key types.NamespacedName) error {
 }
 
 func (r *ClusterReconciler) createHcr(key types.NamespacedName, cluster *clusterv1.Cluster) error {
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 	hcr.Name = key.Name
 	hcr.Namespace = key.Namespace
 
@@ -209,7 +209,7 @@ func (r *ClusterReconciler) createHcr(key types.NamespacedName, cluster *cluster
 }
 
 func (r *ClusterReconciler) isHcr(key types.NamespacedName) error {
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 	if err := r.Get(context.TODO(), key, hcr); err != nil {
 		if errors.IsNotFound(err) {
 			return err

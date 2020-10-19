@@ -57,7 +57,7 @@ func (r *HyperClusterResourcesReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 
 	// your logic here
 	//get HyperClusterResource
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 	if err := r.Get(context.TODO(), req.NamespacedName, hcr); err != nil {
 		if errors.IsNotFound(err) {
 			log.Info("HyperClusterResource resource not found. Ignoring since object must be deleted.")
@@ -74,7 +74,7 @@ func (r *HyperClusterResourcesReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 	return ctrl.Result{}, nil
 }
 
-func (r *HyperClusterResourcesReconciler) machineDeploymentUpdate(hcr *hyperv1.HyperClusterResources) {
+func (r *HyperClusterResourcesReconciler) machineDeploymentUpdate(hcr *hyperv1.HyperClusterResource) {
 	md := &clusterv1.MachineDeployment{}
 	key := types.NamespacedName{Name: hcr.Name + "-md-0", Namespace: "default"}
 
@@ -95,7 +95,7 @@ func (r *HyperClusterResourcesReconciler) machineDeploymentUpdate(hcr *hyperv1.H
 	}
 }
 
-func (r *HyperClusterResourcesReconciler) kubeadmControlPlaneUpdate(hcr *hyperv1.HyperClusterResources) {
+func (r *HyperClusterResourcesReconciler) kubeadmControlPlaneUpdate(hcr *hyperv1.HyperClusterResource) {
 	kcp := &controlplanev1.KubeadmControlPlane{}
 	key := types.NamespacedName{Name: hcr.Name + "-control-plane", Namespace: "default"}
 
@@ -127,7 +127,7 @@ func (r *HyperClusterResourcesReconciler) requeueHyperClusterResourcesForKubeadm
 	}
 
 	//get HyperClusterResource
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 	key := types.NamespacedName{Namespace: "kube-federation-system", Name: cp.Name[0 : len(cp.Name)-len("-control-plane")]}
 	if err := r.Get(context.TODO(), key, hcr); err != nil {
 		if errors.IsNotFound(err) {
@@ -165,7 +165,7 @@ func (r *HyperClusterResourcesReconciler) requeueHyperClusterResourcesForMachine
 	}
 
 	//get HyperClusterResource
-	hcr := &hyperv1.HyperClusterResources{}
+	hcr := &hyperv1.HyperClusterResource{}
 	key := types.NamespacedName{Namespace: "kube-federation-system", Name: md.Name[0 : len(md.Name)-len("-md-0")]}
 	if err := r.Get(context.TODO(), key, hcr); err != nil {
 		if errors.IsNotFound(err) {
@@ -193,7 +193,7 @@ func (r *HyperClusterResourcesReconciler) requeueHyperClusterResourcesForMachine
 
 func (r *HyperClusterResourcesReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	controller, err := ctrl.NewControllerManagedBy(mgr).
-		For(&hyperv1.HyperClusterResources{}).
+		For(&hyperv1.HyperClusterResource{}).
 		WithEventFilter(
 			predicate.Funcs{
 				// Avoid reconciling if the event triggering the reconciliation is related to incremental status updates
@@ -202,8 +202,8 @@ func (r *HyperClusterResourcesReconciler) SetupWithManager(mgr ctrl.Manager) err
 					return false
 				},
 				UpdateFunc: func(e event.UpdateEvent) bool {
-					oldhcr := e.ObjectOld.(*hyperv1.HyperClusterResources).DeepCopy()
-					newhcr := e.ObjectNew.(*hyperv1.HyperClusterResources).DeepCopy()
+					oldhcr := e.ObjectOld.(*hyperv1.HyperClusterResource).DeepCopy()
+					newhcr := e.ObjectNew.(*hyperv1.HyperClusterResource).DeepCopy()
 
 					if oldhcr.Spec.MasterNum != newhcr.Spec.MasterNum || oldhcr.Spec.WorkerNum != newhcr.Spec.WorkerNum {
 						return true

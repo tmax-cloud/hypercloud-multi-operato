@@ -8,7 +8,7 @@ resources:
   kind: FederatedService
   version: v1beta1
 - group: hyper
-  kind: HyperClusterResources
+  kind: HyperClusterResource
   version: v1
 version: 3-alpha
 plugins:
