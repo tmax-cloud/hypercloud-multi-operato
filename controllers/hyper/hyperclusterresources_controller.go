@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -69,34 +68,13 @@ func (r *HyperClusterResourcesReconciler) Reconcile(req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, err
 	}
 
-	//create helper for patch
-	helper, _ := patch.NewHelper(hcr, r.Client)
-	defer func() {
-		if err := helper.Patch(context.TODO(), hcr); err != nil {
-			log.Error(err, "HyperClusterResource patch error")
-		}
-	}()
-
-	r.kubeadmControlPlaneReconcile(hcr)
-	r.machineDeploymentReconcile(hcr)
+	r.kubeadmControlPlaneUpdate(hcr)
+	r.machineDeploymentUpdate(hcr)
 
 	return ctrl.Result{}, nil
 }
 
-func (r *HyperClusterResourcesReconciler) kubeadmControlPlaneReconcile(hcr *hyperv1.HyperClusterResources) {
-	kcp := &controlplanev1.KubeadmControlPlane{}
-	key := types.NamespacedName{Name: hcr.Name + "-control-plane", Namespace: "default"}
-
-	if err := r.Get(context.TODO(), key, kcp); err != nil {
-		return
-	}
-
-	hcr.Status.MasterNum = int(*kcp.Spec.Replicas)
-	hcr.Status.MasterRun = int(kcp.Status.Replicas)
-	hcr.Spec.Version = kcp.Spec.Version
-}
-
-func (r *HyperClusterResourcesReconciler) machineDeploymentReconcile(hcr *hyperv1.HyperClusterResources) {
+func (r *HyperClusterResourcesReconciler) machineDeploymentUpdate(hcr *hyperv1.HyperClusterResources) {
 	md := &clusterv1.MachineDeployment{}
 	key := types.NamespacedName{Name: hcr.Name + "-md-0", Namespace: "default"}
 
@@ -104,8 +82,38 @@ func (r *HyperClusterResourcesReconciler) machineDeploymentReconcile(hcr *hyperv
 		return
 	}
 
-	hcr.Status.WorkerNum = int(*md.Spec.Replicas)
-	hcr.Status.WorkerRun = int(md.Status.Replicas)
+	//create helper for patch
+	helper, _ := patch.NewHelper(md, r.Client)
+	defer func() {
+		if err := helper.Patch(context.TODO(), md); err != nil {
+			r.Log.Error(err, "kubeadmcontrolplane patch error")
+		}
+	}()
+
+	if *md.Spec.Replicas != int32(hcr.Spec.WorkerNum) {
+		*md.Spec.Replicas = int32(hcr.Spec.WorkerNum)
+	}
+}
+
+func (r *HyperClusterResourcesReconciler) kubeadmControlPlaneUpdate(hcr *hyperv1.HyperClusterResources) {
+	kcp := &controlplanev1.KubeadmControlPlane{}
+	key := types.NamespacedName{Name: hcr.Name + "-control-plane", Namespace: "default"}
+
+	if err := r.Get(context.TODO(), key, kcp); err != nil {
+		return
+	}
+
+	//create helper for patch
+	helper, _ := patch.NewHelper(kcp, r.Client)
+	defer func() {
+		if err := helper.Patch(context.TODO(), kcp); err != nil {
+			r.Log.Error(err, "kubeadmcontrolplane patch error")
+		}
+	}()
+
+	if *kcp.Spec.Replicas != int32(hcr.Spec.MasterNum) {
+		*kcp.Spec.Replicas = int32(hcr.Spec.MasterNum)
+	}
 }
 
 func (r *HyperClusterResourcesReconciler) requeueHyperClusterResourcesForKubeadmControlPlane(o handler.MapObject) []ctrl.Request {
@@ -118,11 +126,32 @@ func (r *HyperClusterResourcesReconciler) requeueHyperClusterResourcesForKubeadm
 		return nil
 	}
 
-	return []ctrl.Request{
-		{
-			NamespacedName: client.ObjectKey{Namespace: "kube-federation-system", Name: cp.Name[0 : len(cp.Name)-len("-control-plane")]},
-		},
+	//get HyperClusterResource
+	hcr := &hyperv1.HyperClusterResources{}
+	key := types.NamespacedName{Namespace: "kube-federation-system", Name: cp.Name[0 : len(cp.Name)-len("-control-plane")]}
+	if err := r.Get(context.TODO(), key, hcr); err != nil {
+		if errors.IsNotFound(err) {
+			log.Info("HyperClusterResource resource not found. Ignoring since object must be deleted.")
+			return nil
+		}
+
+		log.Error(err, "Failed to get HyperClusterResource")
+		return nil
 	}
+
+	//create helper for patch
+	helper, _ := patch.NewHelper(hcr, r.Client)
+	defer func() {
+		if err := helper.Patch(context.TODO(), hcr); err != nil {
+			log.Error(err, "HyperClusterResource patch error")
+		}
+	}()
+
+	hcr.Spec.MasterNum = int(*cp.Spec.Replicas)
+	hcr.Status.MasterRun = int(cp.Status.Replicas)
+	hcr.Spec.Version = cp.Spec.Version
+
+	return nil
 }
 
 func (r *HyperClusterResourcesReconciler) requeueHyperClusterResourcesForMachineDeployment(o handler.MapObject) []ctrl.Request {
@@ -135,11 +164,31 @@ func (r *HyperClusterResourcesReconciler) requeueHyperClusterResourcesForMachine
 		return nil
 	}
 
-	return []ctrl.Request{
-		{
-			NamespacedName: client.ObjectKey{Namespace: "kube-federation-system", Name: md.Name[0 : len(md.Name)-len("-md-0")]},
-		},
+	//get HyperClusterResource
+	hcr := &hyperv1.HyperClusterResources{}
+	key := types.NamespacedName{Namespace: "kube-federation-system", Name: md.Name[0 : len(md.Name)-len("-md-0")]}
+	if err := r.Get(context.TODO(), key, hcr); err != nil {
+		if errors.IsNotFound(err) {
+			log.Info("HyperClusterResource resource not found. Ignoring since object must be deleted.")
+			return nil
+		}
+
+		log.Error(err, "Failed to get HyperClusterResource")
+		return nil
 	}
+
+	//create helper for patch
+	helper, _ := patch.NewHelper(hcr, r.Client)
+	defer func() {
+		if err := helper.Patch(context.TODO(), hcr); err != nil {
+			log.Error(err, "HyperClusterResource patch error")
+		}
+	}()
+
+	hcr.Spec.WorkerNum = int(*md.Spec.Replicas)
+	hcr.Status.WorkerRun = int(md.Status.Replicas)
+
+	return nil
 }
 
 func (r *HyperClusterResourcesReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -156,13 +205,10 @@ func (r *HyperClusterResourcesReconciler) SetupWithManager(mgr ctrl.Manager) err
 					oldhcr := e.ObjectOld.(*hyperv1.HyperClusterResources).DeepCopy()
 					newhcr := e.ObjectNew.(*hyperv1.HyperClusterResources).DeepCopy()
 
-					oldhcr.Status = hyperv1.HyperClusterResourcesStatus{}
-					newhcr.Status = hyperv1.HyperClusterResourcesStatus{}
-
-					oldhcr.ObjectMeta.ResourceVersion = ""
-					newhcr.ObjectMeta.ResourceVersion = ""
-
-					return !reflect.DeepEqual(oldhcr, newhcr)
+					if oldhcr.Spec.MasterNum != newhcr.Spec.MasterNum || oldhcr.Spec.WorkerNum != newhcr.Spec.WorkerNum {
+						return true
+					}
+					return false
 				},
 				DeleteFunc: func(e event.DeleteEvent) bool {
 					return false

@@ -21,7 +21,7 @@ spec:
     description: is running
     name: Ready
     type: string
-  - JSONPath: .status.masterNum
+  - JSONPath: .spec.masterNum
     description: replica number of master
     name: MasterNum
     type: string
@@ -29,7 +29,7 @@ spec:
     description: running of master
     name: MasterRun
     type: string
-  - JSONPath: .status.workerNum
+  - JSONPath: .spec.workerNum
     description: replica number of worker
     name: WorkerNum
     type: string
@@ -70,17 +70,19 @@ spec:
         spec:
           description: HyperClusterResourcesSpec defines the desired state of HyperClusterResources
           properties:
+            masterNum:
+              type: integer
             provider:
               description: INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
               type: string
             version:
               type: string
+            workerNum:
+              type: integer
           type: object
         status:
           description: HyperClusterResourcesStatus defines the observed state of HyperClusterResources
           properties:
-            masterNum:
-              type: integer
             masterRun:
               type: integer
             ready:
@@ -98,8 +100,6 @@ spec:
                     type: integer
                 type: object
               type: array
-            workerNum:
-              type: integer
             workerRun:
               type: integer
           type: object

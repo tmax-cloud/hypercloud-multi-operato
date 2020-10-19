@@ -26,17 +26,17 @@ import (
 // HyperClusterResourcesSpec defines the desired state of HyperClusterResources
 type HyperClusterResourcesSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	Provider string `json:"provider,omitempty"`
-	Version  string `json:"version,omitempty"`
+	Provider  string `json:"provider,omitempty"`
+	Version   string `json:"version,omitempty"`
+	MasterNum int    `json:"masterNum,omitempty"`
+	WorkerNum int    `json:"workerNum,omitempty"`
 }
 
 // HyperClusterResourcesStatus defines the observed state of HyperClusterResources
 type HyperClusterResourcesStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	Ready     bool           `json:"ready,omitempty"`
-	MasterNum int            `json:"masterNum,omitempty"`
 	MasterRun int            `json:"masterRun,omitempty"`
-	WorkerNum int            `json:"workerNum,omitempty"`
 	WorkerRun int            `json:"workerRun,omitempty"`
 	Resources []ResourceType `json:"resources,omitempty"`
 }
@@ -47,9 +47,9 @@ type HyperClusterResourcesStatus struct {
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=".spec.provider",description="provider"
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="k8s version"
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="is running"
-// +kubebuilder:printcolumn:name="MasterNum",type="string",JSONPath=".status.masterNum",description="replica number of master"
+// +kubebuilder:printcolumn:name="MasterNum",type="string",JSONPath=".spec.masterNum",description="replica number of master"
 // +kubebuilder:printcolumn:name="MasterRun",type="string",JSONPath=".status.masterRun",description="running of master"
-// +kubebuilder:printcolumn:name="WorkerNum",type="string",JSONPath=".status.workerNum",description="replica number of worker"
+// +kubebuilder:printcolumn:name="WorkerNum",type="string",JSONPath=".spec.workerNum",description="replica number of worker"
 // +kubebuilder:printcolumn:name="WorkerRun",type="string",JSONPath=".status.workerRun",description="running of worker"
 
 // HyperClusterResources is the Schema for the hyperclusterresources API
