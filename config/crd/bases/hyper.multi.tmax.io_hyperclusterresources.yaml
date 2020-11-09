@@ -85,21 +85,32 @@ spec:
           properties:
             masterRun:
               type: integer
+            nodes:
+              items:
+                properties:
+                  ip:
+                    type: string
+                  isMaster:
+                    type: boolean
+                  name:
+                    type: string
+                  resources:
+                    items:
+                      properties:
+                        capacity:
+                          type: string
+                        type:
+                          type: string
+                        usage:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              type: array
             ready:
               description: INSERT ADDITIONAL STATUS FIELD - define observed state
                 of cluster
               type: boolean
-            resources:
-              items:
-                properties:
-                  name:
-                    type: string
-                  running:
-                    type: integer
-                  total:
-                    type: integer
-                type: object
-              type: array
             workerRun:
               type: integer
           type: object

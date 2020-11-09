@@ -35,10 +35,10 @@ type HyperClusterResourceSpec struct {
 // HyperClusterResourcesStatus defines the observed state of HyperClusterResources
 type HyperClusterResourceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	Ready     bool           `json:"ready,omitempty"`
-	MasterRun int            `json:"masterRun,omitempty"`
-	WorkerRun int            `json:"workerRun,omitempty"`
-	Resources []ResourceType `json:"resources,omitempty"`
+	Ready     bool       `json:"ready,omitempty"`
+	MasterRun int        `json:"masterRun,omitempty"`
+	WorkerRun int        `json:"workerRun,omitempty"`
+	Node      []NodeInfo `json:"nodes,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -70,10 +70,17 @@ type HyperClusterResourceList struct {
 	Items           []HyperClusterResource `json:"items"`
 }
 
+type NodeInfo struct {
+	Name      string         `json:"name,omitempty"`
+	Ip        string         `json:"ip,omitempty"`
+	IsMaster  bool           `json:"isMaster,omitempty"`
+	Resources []ResourceType `json:"resources,omitempty"`
+}
+
 type ResourceType struct {
-	Name    string `json:"name,omitempty"`
-	Total   int    `json:"total,omitempty"`
-	Running int    `json:"running,omitempty"`
+	Type     string `json:"type,omitempty"`
+	Capacity string `json:"capacity,omitempty"`
+	Usage    string `json:"usage,omitempty"`
 }
 
 func init() {
