@@ -17,11 +17,17 @@ limitations under the License.
 package util
 
 const (
-	WatchAnnotationKey         = "federation"
-	WatchAnnotationJoinValue   = "join"
-	WatchAnnotationUnJoinValue = "unjoin"
-	KubeconfigPostfix          = "-kubeconfig"
-	ClusterNamespace           = "default"
-	KubeFedNamespace           = "kube-federation-system"
-	HostClusterName            = "hostcluster"
+	WatchAnnotationKey          = "federation"
+	WatchAnnotationJoinValue    = "join"
+	WatchAnnotationUnJoinValue  = "unjoin"
+	KubeconfigPostfix           = "-kubeconfig"
+	ClusterNamespace            = "default"
+	KubeFedNamespace            = "kube-federation-system"
+	HostClusterName             = "hostcluster"
+	FederatedConfigMapName      = "hypercloud-multi-agent-agentconfig"
+	FederatedConfigMapNamespace = "hypercloud-multi-agent-system"
+	MultiApiServerNamespace     = "hypercloud4-multi-system"
+	MultiApiServerServiceName   = "hypercloud4-multi-api-server-service"
+	SecretFinalizer             = "secret/finalizers"
+	KubefedclusterFinalizer     = "kubefedcluster/finalizers"
 )

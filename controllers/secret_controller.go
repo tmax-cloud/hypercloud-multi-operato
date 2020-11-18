@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -32,6 +33,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	constant "multi.tmax.io/controllers/util"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	fedcore "sigs.k8s.io/kubefed/pkg/apis/core/v1beta1"
 	fedv1b1 "sigs.k8s.io/kubefed/pkg/apis/core/v1beta1"
 	"sigs.k8s.io/kubefed/pkg/kubefedctl"
 )
@@ -62,6 +65,14 @@ func (s *SecretReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, err
 	}
 
+	//set patch helper
+	helper, _ := patch.NewHelper(secret, s.Client)
+	defer func() {
+		if err := helper.Patch(context.TODO(), secret); err != nil {
+			s.Log.Error(err, "secret patch error")
+		}
+	}()
+
 	//check meet condition
 	if val, ok := meetCondi(*secret); ok {
 		reqLogger.Info(secret.GetName() + " meets condition ")
@@ -69,26 +80,38 @@ func (s *SecretReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		clientRestConfig, _ := getKubeConfig(*secret)
 		clientName := strings.Split(secret.GetName(), constant.KubeconfigPostfix)[0]
 
+		//delete handling
+		if !secret.DeletionTimestamp.IsZero() {
+			s.deleteHandling(clientName)
+			controllerutil.RemoveFinalizer(secret, constant.SecretFinalizer)
+			return ctrl.Result{}, nil
+		}
+
+		// Add finalizer first if not exist to avoid the race condition between init and delete
+		if !controllerutil.ContainsFinalizer(secret, constant.SecretFinalizer) {
+			controllerutil.AddFinalizer(secret, constant.SecretFinalizer)
+		}
+
 		val = strings.ToLower(val)
 		switch val {
 		case constant.WatchAnnotationJoinValue:
 			if err := s.joinFed(clientName, clientRestConfig); err != nil {
-				s.patchSecret(secret.GetName(), "joinError")
+				secret.GetAnnotations()[constant.WatchAnnotationKey] = "joinError"
 				reqLogger.Info(secret.GetName() + " is fail to join")
 
 				return ctrl.Result{}, err
 			}
-			s.patchSecret(secret.GetName(), "joinSuccessful")
+			secret.GetAnnotations()[constant.WatchAnnotationKey] = "joinSuccessful"
 			reqLogger.Info(secret.GetName() + " is joined successfully")
 
 		case constant.WatchAnnotationUnJoinValue:
 			if err := s.unjoinFed(clientName, clientRestConfig); err != nil {
-				s.patchSecret(secret.GetName(), "unjoinError")
+				secret.GetAnnotations()[constant.WatchAnnotationKey] = "unjoinError"
 				reqLogger.Info(secret.GetName() + " is fail to unjoin")
 
 				return ctrl.Result{}, err
 			}
-			s.patchSecret(secret.GetName(), "unjoinSuccessful")
+			secret.GetAnnotations()[constant.WatchAnnotationKey] = "unjoinSuccessful"
 			reqLogger.Info(secret.GetName() + " is unjoined successfully")
 		default:
 			reqLogger.Info(secret.GetName() + " has unexpected value with " + val)
@@ -109,6 +132,15 @@ func meetCondi(s corev1.Secret) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func (s *SecretReconciler) deleteHandling(clusterName string) {
+	kfc := &fedcore.KubeFedCluster{}
+	kfcKey := types.NamespacedName{Name: clusterName, Namespace: constant.KubeFedNamespace}
+
+	if err := s.Get(context.TODO(), kfcKey, kfc); err == nil {
+		s.Delete(context.TODO(), kfc)
+	}
 }
 
 func (s *SecretReconciler) unjoinFed(clusterName string, clusterConfig *rest.Config) error {
@@ -146,23 +178,6 @@ func getKubeConfig(s corev1.Secret) (*rest.Config, error) {
 		}
 	}
 	return nil, errors.NewBadRequest("getClientConfig Error")
-}
-
-func (s *SecretReconciler) patchSecret(name string, status string) error {
-	key := types.NamespacedName{Namespace: constant.ClusterNamespace, Name: name}
-	bsecret := &corev1.Secret{}
-
-	if err := s.Get(context.TODO(), key, bsecret); err != nil {
-		return err
-	}
-
-	asecret := bsecret.DeepCopy()
-	asecret.GetAnnotations()[constant.WatchAnnotationKey] = status
-	if err := s.Patch(context.TODO(), asecret, client.MergeFrom(bsecret)); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {

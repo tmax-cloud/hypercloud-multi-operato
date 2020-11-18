@@ -21,6 +21,18 @@ rules:
   - update
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - cluster.x-k8s.io
   resources:
   - clusters
@@ -133,6 +145,18 @@ rules:
   - get
   - list
   - post
+  - watch
+- apiGroups:
+  - types.kubefed.io
+  resources:
+  - federatedconfigmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - types.kubefed.io
