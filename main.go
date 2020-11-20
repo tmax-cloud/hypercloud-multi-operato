@@ -34,7 +34,7 @@ import (
 
 	typesv1beta1 "multi.tmax.io/apis/external/v1beta1"
 	hyperv1 "multi.tmax.io/apis/hyper/v1"
-	secretController "multi.tmax.io/controllers"
+	controller "multi.tmax.io/controllers"
 	clusterController "multi.tmax.io/controllers/capi"
 	federatedServiceController "multi.tmax.io/controllers/fed"
 	hypercontroller "multi.tmax.io/controllers/hyper"
@@ -97,12 +97,20 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "capi/clusterController")
 		os.Exit(1)
 	}
-	if err = (&secretController.SecretReconciler{
+	if err = (&controller.SecretReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controller").WithName("secretController"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "secretController")
+		os.Exit(1)
+	}
+	if err = (&controller.ServiceReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controller").WithName("serviceController"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "serviceController")
 		os.Exit(1)
 	}
 	if err = (&federatedServiceController.FederatedServiceReconciler{
@@ -119,6 +127,14 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "fed/kubefedclusterController")
+		os.Exit(1)
+	}
+	if err = (&hypercontroller.HyperClusterResourcesReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("HyperClusterResource"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "HyperClusterResource")
 		os.Exit(1)
 	}
 	if err = (&hypercontroller.HyperClusterResourcesReconciler{
