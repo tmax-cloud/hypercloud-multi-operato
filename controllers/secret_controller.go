@@ -25,6 +25,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -180,8 +182,34 @@ func getKubeConfig(s corev1.Secret) (*rest.Config, error) {
 	return nil, errors.NewBadRequest("getClientConfig Error")
 }
 
+func checkValidName(s corev1.Secret) bool {
+	ok := strings.Contains(s.GetName(), constant.KubeconfigPostfix)
+	return ok
+}
+
 func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	_, err := ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Secret{}).
-		Complete(r)
+		WithEventFilter(
+			predicate.Funcs{
+				CreateFunc: func(e event.CreateEvent) bool {
+					secret := e.Object.(*corev1.Secret).DeepCopy()
+					return checkValidName(*secret)
+				},
+				UpdateFunc: func(e event.UpdateEvent) bool {
+					secret := e.ObjectNew.(*corev1.Secret).DeepCopy()
+					return checkValidName(*secret)
+				},
+				DeleteFunc: func(e event.DeleteEvent) bool {
+					secret := e.Object.(*corev1.Secret).DeepCopy()
+					return checkValidName(*secret)
+				},
+				GenericFunc: func(e event.GenericEvent) bool {
+					return false
+				},
+			},
+		).
+		Build(r)
+
+	return err
 }
