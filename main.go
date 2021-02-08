@@ -32,6 +32,7 @@ import (
 	fedv1b1 "sigs.k8s.io/kubefed/pkg/apis/core/v1beta1"
 	fedmultiv1a1 "sigs.k8s.io/kubefed/pkg/apis/multiclusterdns/v1alpha1"
 
+	console "github.com/tmax-cloud/console-operator/api/v1"
 	typesv1beta1 "multi.tmax.io/apis/external/v1beta1"
 	hyperv1 "multi.tmax.io/apis/hyper/v1"
 	controller "multi.tmax.io/controllers"
@@ -63,6 +64,8 @@ func init() {
 	utilruntime.Must(hyperv1.AddToScheme(scheme))
 
 	utilruntime.Must(controlplanev1.AddToScheme(scheme))
+
+	utilruntime.Must(console.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

@@ -32,4 +32,5 @@ const (
 	KubefedclusterFinalizer            = "kubefedcluster/finalizers"
 	MultiApiServerServiceSelectorKey   = "hypercloud4"
 	MultiApiServerServiceSelectorValue = "multi-api-server"
+	ClusterOwnerKey                    = "owner"
 )

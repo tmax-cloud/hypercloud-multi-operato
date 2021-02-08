@@ -7,6 +7,7 @@ require (
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
 	github.com/prometheus/common v0.10.0
+	github.com/tmax-cloud/console-operator v0.0.0-20210113065819-2bb792175c14
 	k8s.io/api v0.18.6
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v0.18.6

@@ -85,6 +85,10 @@ spec:
           properties:
             masterRun:
               type: integer
+            members:
+              items:
+                type: string
+              type: array
             nodes:
               items:
                 properties:
@@ -107,6 +111,8 @@ spec:
                     type: array
                 type: object
               type: array
+            owner:
+              type: string
             ready:
               description: INSERT ADDITIONAL STATUS FIELD - define observed state
                 of cluster

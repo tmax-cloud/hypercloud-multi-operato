@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	_ "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -38,6 +38,7 @@ import (
 	typesv1beta1 "multi.tmax.io/apis/external/v1beta1"
 	hyperv1 "multi.tmax.io/apis/hyper/v1"
 	constant "multi.tmax.io/controllers/util"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	fedcore "sigs.k8s.io/kubefed/pkg/apis/core/v1beta1"
 )
 
@@ -56,56 +57,91 @@ type KubeFedClusterReconciler struct {
 
 func (r *KubeFedClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	log := r.Log.WithValues("KubeFedClusters", req.NamespacedName)
-	// your logic here
+	// log := r.Log.WithValues("KubeFedClusters", req.NamespacedName)
+	// // your logic here
 
-	//get kubefedcluster
-	kfc := &fedcore.KubeFedCluster{}
-	if err := r.Get(context.TODO(), req.NamespacedName, kfc); err != nil {
-		if errors.IsNotFound(err) {
-			log.Info("KubeFedClusters resource not found. Ignoring since object must be deleted.")
-			return ctrl.Result{}, nil
-		}
+	// //get kubefedcluster
+	// kfc := &fedcore.KubeFedCluster{}
+	// if err := r.Get(context.TODO(), req.NamespacedName, kfc); err != nil {
+	// 	if errors.IsNotFound(err) {
+	// 		log.Info("KubeFedClusters resource not found. Ignoring since object must be deleted.")
+	// 		return ctrl.Result{}, nil
+	// 	}
 
-		log.Error(err, "Failed to get KubeFedClusters")
-		return ctrl.Result{}, err
-	}
+	// 	log.Error(err, "Failed to get KubeFedClusters")
+	// 	return ctrl.Result{}, err
+	// }
 
-	helper, _ := patch.NewHelper(kfc, r.Client)
-	defer func() {
-		if err := helper.Patch(context.TODO(), kfc); err != nil {
-			r.Log.Error(err, "kfc patch error")
-		}
-	}()
+	// helper, _ := patch.NewHelper(kfc, r.Client)
+	// defer func() {
+	// 	if err := helper.Patch(context.TODO(), kfc); err != nil {
+	// 		r.Log.Error(err, "kfc patch error")
+	// 	}
+	// }()
 
-	if kfc.DeletionTimestamp != nil {
-		if err := r.deleteSecret(kfc); err != nil {
-			log.Error(err, "Related secret cann't be deleted")
-		}
+	// if kfc.DeletionTimestamp != nil {
+	// 	if err := r.deleteSecret(kfc); err != nil {
+	// 		log.Error(err, "Related secret cann't be deleted")
+	// 	}
 
-		controllerutil.RemoveFinalizer(kfc, constant.KubefedclusterFinalizer)
+	// 	controllerutil.RemoveFinalizer(kfc, constant.KubefedclusterFinalizer)
 
-		return ctrl.Result{}, nil
-	}
+	// 	return ctrl.Result{}, nil
+	// }
 
-	// Add finalizer first if not exist to avoid the race condition between init and delete
-	if !controllerutil.ContainsFinalizer(kfc, constant.KubefedclusterFinalizer) {
-		controllerutil.AddFinalizer(kfc, constant.KubefedclusterFinalizer)
-	}
+	// // Add finalizer first if not exist to avoid the race condition between init and delete
+	// if !controllerutil.ContainsFinalizer(kfc, constant.KubefedclusterFinalizer) {
+	// 	controllerutil.AddFinalizer(kfc, constant.KubefedclusterFinalizer)
+	// }
 
-	//create hyperclusterresources if doesn't exist
-	if err := r.isHcr(req.NamespacedName); err != nil {
-		if err := r.createHcr(req.NamespacedName, kfc); err != nil {
-			log.Error(err, "HyperClusterResources cannot created")
-		}
-	}
+	// // set cluster owner
+	// if len(kfc.OwnerReferences) == 0 {
+	// 	r.patchKubeFedCluster(kfc)
+	// } else {
+	// 	for index, ref := range kfc.OwnerReferences {
+	// 		if ref.Kind == "Cluster" {
+	// 			break
+	// 		}
 
-	//modify federatedconfigmap
-	if err := r.handleFcm(req.NamespacedName.Name); err != nil {
-		log.Error(err, "handling federatedconfigmap error")
-	}
+	// 		if index == len(kfc.OwnerReferences)-1 {
+	// 			r.patchKubeFedCluster(kfc)
+	// 		}
+	// 	}
+	// }
+
+	// //create hyperclusterresources if doesn't exist
+	// if err := r.isHcr(req.NamespacedName); err != nil {
+	// 	if err := r.createHcr(req.NamespacedName, kfc); err != nil {
+	// 		log.Error(err, "HyperClusterResources cannot created")
+	// 	}
+	// }
+
+	// //modify federatedconfigmap
+	// if err := r.handleFcm(req.NamespacedName.Name); err != nil {
+	// 	log.Error(err, "handling federatedconfigmap error")
+	// }
 
 	return ctrl.Result{}, nil
+}
+
+func (r *KubeFedClusterReconciler) patchKubeFedCluster(kfc *fedcore.KubeFedCluster) {
+	c := &clusterv1.Cluster{}
+
+	key := types.NamespacedName{
+		Name:      kfc.Name,
+		Namespace: "default",
+	}
+
+	if err := r.Get(context.TODO(), key, c); err != nil {
+		r.Log.Error(err, "get cluster error")
+	}
+
+	kfc.SetOwnerReferences(append(kfc.OwnerReferences, metav1.OwnerReference{
+		APIVersion: clusterv1.GroupVersion.String(),
+		Kind:       "Cluster",
+		Name:       c.Name,
+		UID:        c.UID,
+	}))
 }
 
 func (r *KubeFedClusterReconciler) deleteSecret(kfc *fedcore.KubeFedCluster) error {

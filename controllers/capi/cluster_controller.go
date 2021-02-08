@@ -22,18 +22,23 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/common/log"
+	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/cluster-api/util/patch"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/cluster-api/util/patch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	hyperv1 "multi.tmax.io/apis/hyper/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	restclient "k8s.io/client-go/rest"
 	constant "multi.tmax.io/controllers/util"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+
+	console "github.com/tmax-cloud/console-operator/api/v1"
 )
 
 // ClusterReconciler reconciles a Memcached object
@@ -51,7 +56,6 @@ type ClusterReconciler struct {
 func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
 	reqLogger := r.Log.WithValues("Cluster", req.NamespacedName)
-	hcrNamespacedName := types.NamespacedName{Name: req.Name, Namespace: "kube-federation-system"}
 	// your logic here
 
 	//catch cluster
@@ -68,16 +72,7 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	//handling delete
 	if cluster.DeletionTimestamp != nil {
-		if err := r.deleteHcr(hcrNamespacedName); err != nil {
-			log.Error(err, "HyperClusterResources cannot deleted")
-		}
-	}
-
-	//create hyperclusterresources
-	if err := r.isHcr(hcrNamespacedName); err != nil {
-		if err := r.createHcr(hcrNamespacedName, cluster); err != nil {
-			log.Error(err, "HyperClusterResources cannot created")
-		}
+		r.deleteConsole(cluster)
 	}
 
 	/*
@@ -88,7 +83,7 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if ok := meetCondi(*cluster); ok {
 		reqLogger.Info(cluster.GetName() + " meets condition ")
 
-		if err := r.patchSecret(cluster.GetName()+constant.KubeconfigPostfix, constant.WatchAnnotationJoinValue); err != nil {
+		if err := r.patchSecret(types.NamespacedName{Name: cluster.GetName() + constant.KubeconfigPostfix, Namespace: cluster.Namespace}, constant.WatchAnnotationJoinValue); err != nil {
 			_ = r.patchCluster(cluster, "error")
 
 			reqLogger.Error(err, "Failed to patch secret")
@@ -100,11 +95,75 @@ func (r *ClusterReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		reqLogger.Info(cluster.GetName() + " is successful")
-		r.patchHcr(hcrNamespacedName, cluster)
+
+		r.deployRB2remote(cluster.Name, cluster.Annotations["owner"])
+		r.handleConsole(cluster)
 	} else {
 		reqLogger.Info(cluster.GetName() + " doesn't meet the condition")
 	}
 	return ctrl.Result{}, nil
+}
+
+func (r *ClusterReconciler) deleteConsole(c *clusterv1.Cluster) {
+	cs := &console.Console{}
+	key := types.NamespacedName{Name: "hypercloud5-multi-cluster", Namespace: "console-system"}
+
+	r.Get(context.TODO(), key, cs)
+
+	helper, _ := patch.NewHelper(cs, r.Client)
+	defer func() {
+		if err := helper.Patch(context.TODO(), cs); err != nil {
+			r.Log.Error(err, "console patch error")
+		}
+	}()
+
+	delete(cs.Spec.Configuration.Routers, c.Name)
+}
+
+func (r *ClusterReconciler) handleConsole(c *clusterv1.Cluster) {
+	cs := &console.Console{}
+	key := types.NamespacedName{Name: "hypercloud5-multi-cluster", Namespace: "console-system"}
+
+	router := &console.Router{
+		Server: "https://" + c.Spec.ControlPlaneEndpoint.Host + ":6443",
+		Rule:   "PathPrefix(`/api/" + c.Name + "/`)",
+		Path:   "/api/" + c.Name + "/",
+	}
+
+	if err := r.Get(context.TODO(), key, cs); err != nil {
+		if errors.IsNotFound(err) {
+			r.Log.Info("console resource not found. create console resource.")
+
+			newCs := &console.Console{}
+			newCs.Name = "hypercloud5-multi-cluster"
+			newCs.Namespace = "console-system"
+
+			masterRouter := &console.Router{
+				Server: "https://",
+				Rule:   "PathPrefix(`/api/master/`)",
+				Path:   "/api/master/",
+			}
+
+			newCs.Spec.Configuration.Routers = map[string]*console.Router{
+				c.Name:   router,
+				"master": masterRouter,
+			}
+
+			if err2 := r.Create(context.TODO(), newCs); err2 != nil {
+				r.Log.Info(err2.Error())
+			}
+		}
+	} else {
+		//set patch helper
+		helper, _ := patch.NewHelper(cs, r.Client)
+		defer func() {
+			if err := helper.Patch(context.TODO(), cs); err != nil {
+				r.Log.Error(err, "console patch error")
+			}
+		}()
+
+		cs.Spec.Configuration.Routers[c.Name] = router
+	}
 }
 
 /*
@@ -134,8 +193,7 @@ func (r *ClusterReconciler) patchCluster(bcluster *clusterv1.Cluster, result str
 	return nil
 }
 
-func (r *ClusterReconciler) patchSecret(name string, status string) error {
-	key := types.NamespacedName{Namespace: constant.ClusterNamespace, Name: name}
+func (r *ClusterReconciler) patchSecret(key types.NamespacedName, status string) error {
 	bsecret := &corev1.Secret{}
 
 	if err := r.Get(context.TODO(), key, bsecret); err != nil {
@@ -154,73 +212,60 @@ func (r *ClusterReconciler) patchSecret(name string, status string) error {
 	return nil
 }
 
-func (r *ClusterReconciler) patchHcr(key types.NamespacedName, cluster *clusterv1.Cluster) {
-	hcr := &hyperv1.HyperClusterResource{}
-
-	if err := r.Get(context.TODO(), key, hcr); err != nil {
-		r.Log.Error(err, "get hcr error")
-	}
-	helper, _ := patch.NewHelper(hcr, r.Client)
-	defer func() {
-		if err := helper.Patch(context.TODO(), hcr); err != nil {
-			r.Log.Error(err, "hcr patch error")
-		}
-	}()
-
-	hcr.Status.Ready = true
-}
-
-func (r *ClusterReconciler) deleteHcr(key types.NamespacedName) error {
-	hcr := &hyperv1.HyperClusterResource{}
-	if err := r.Get(context.TODO(), key, hcr); err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-
-	if err := r.Delete(context.TODO(), hcr); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *ClusterReconciler) createHcr(key types.NamespacedName, cluster *clusterv1.Cluster) error {
-	hcr := &hyperv1.HyperClusterResource{}
-	hcr.Name = key.Name
-	hcr.Namespace = key.Namespace
-
-	hcr.SetOwnerReferences(append(hcr.OwnerReferences, metav1.OwnerReference{
-		APIVersion: clusterv1.GroupVersion.String(),
-		Kind:       "Cluster",
-		Name:       cluster.Name,
-		UID:        cluster.UID,
-	}))
-
-	hcr.Spec.Provider = cluster.Spec.InfrastructureRef.Kind[0 : len(cluster.Spec.InfrastructureRef.Kind)-len("Cluster")]
-	hcr.Status.Ready = false
-
-	if err := r.Create(context.TODO(), hcr); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *ClusterReconciler) isHcr(key types.NamespacedName) error {
-	hcr := &hyperv1.HyperClusterResource{}
-	if err := r.Get(context.TODO(), key, hcr); err != nil {
-		if errors.IsNotFound(err) {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&clusterv1.Cluster{}).
 		Complete(r)
+}
+
+func (r *ClusterReconciler) deployRB2remote(clusterName, owner string) {
+	var remoteClient client.Client
+
+	if restConfig, err := getConfigFromSecret(r.Client, clusterName); err != nil {
+		log.Error(err)
+		return
+	} else {
+		remoteScheme := runtime.NewScheme()
+		utilruntime.Must(rbacv1.AddToScheme(remoteScheme))
+		remoteClient, err = client.New(restConfig, client.Options{Scheme: remoteScheme})
+
+		rb := &rbacv1.ClusterRoleBinding{}
+		rb.Name = clusterName + "-" + owner
+		rb.RoleRef = rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+		}
+		sub := rbacv1.Subject{
+			Kind:     "User",
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     owner,
+		}
+		rb.Subjects = append(rb.Subjects, sub)
+
+		if err := remoteClient.Create(context.TODO(), rb); err != nil {
+			log.Error(err)
+		}
+	}
+}
+
+func getConfigFromSecret(c client.Client, clusterName string) (*restclient.Config, error) {
+	secret := &corev1.Secret{}
+
+	if err := c.Get(context.TODO(), types.NamespacedName{Name: clusterName + "-kubeconfig", Namespace: "capi-system"}, secret); err != nil {
+		log.Errorln(err)
+	}
+
+	return getKubeConfig(*secret)
+}
+
+func getKubeConfig(s corev1.Secret) (*restclient.Config, error) {
+	if value, ok := s.Data["value"]; ok {
+		if clientConfig, err := clientcmd.NewClientConfigFromBytes(value); err == nil {
+			if restConfig, err := clientConfig.ClientConfig(); err == nil {
+				return restConfig, nil
+			}
+		}
+	}
+	return nil, errors.NewBadRequest("getClientConfig Error")
 }

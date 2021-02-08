@@ -118,6 +118,7 @@ func (s *SecretReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		default:
 			reqLogger.Info(secret.GetName() + " has unexpected value with " + val)
 		}
+
 	}
 	return ctrl.Result{}, nil
 }

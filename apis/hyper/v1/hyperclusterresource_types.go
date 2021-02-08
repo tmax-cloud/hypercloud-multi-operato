@@ -39,6 +39,8 @@ type HyperClusterResourceStatus struct {
 	MasterRun int        `json:"masterRun,omitempty"`
 	WorkerRun int        `json:"workerRun,omitempty"`
 	Node      []NodeInfo `json:"nodes,omitempty"`
+	Owner     string     `json:"owner,omitempty"`
+	Members   []string   `json:"members,omitempty"`
 }
 
 // +kubebuilder:object:root=true

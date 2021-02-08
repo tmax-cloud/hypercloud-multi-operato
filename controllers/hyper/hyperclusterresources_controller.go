@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -53,23 +54,23 @@ type HyperClusterResourcesReconciler struct {
 
 func (r *HyperClusterResourcesReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	log := r.Log.WithValues("hyperclusterresources", req.NamespacedName)
+	// log := r.Log.WithValues("hyperclusterresources", req.NamespacedName)
 
 	// your logic here
 	//get HyperClusterResource
-	hcr := &hyperv1.HyperClusterResource{}
-	if err := r.Get(context.TODO(), req.NamespacedName, hcr); err != nil {
-		if errors.IsNotFound(err) {
-			log.Info("HyperClusterResource resource not found. Ignoring since object must be deleted.")
-			return ctrl.Result{}, nil
-		}
+	// hcr := &hyperv1.HyperClusterResource{}
+	// if err := r.Get(context.TODO(), req.NamespacedName, hcr); err != nil {
+	// 	if errors.IsNotFound(err) {
+	// 		log.Info("HyperClusterResource resource not found. Ignoring since object must be deleted.")
+	// 		return ctrl.Result{}, nil
+	// 	}
 
-		log.Error(err, "Failed to get HyperClusterResource")
-		return ctrl.Result{}, err
-	}
+	// 	log.Error(err, "Failed to get HyperClusterResource")
+	// 	return ctrl.Result{}, err
+	// }
 
-	r.kubeadmControlPlaneUpdate(hcr)
-	r.machineDeploymentUpdate(hcr)
+	// r.kubeadmControlPlaneUpdate(hcr)
+	// r.machineDeploymentUpdate(hcr)
 
 	return ctrl.Result{}, nil
 }
@@ -93,6 +94,9 @@ func (r *HyperClusterResourcesReconciler) machineDeploymentUpdate(hcr *hyperv1.H
 	if *md.Spec.Replicas != int32(hcr.Spec.WorkerNum) {
 		*md.Spec.Replicas = int32(hcr.Spec.WorkerNum)
 	}
+	if *md.Spec.Template.Spec.Version != hcr.Spec.Version {
+		*md.Spec.Template.Spec.Version = hcr.Spec.Version
+	}
 }
 
 func (r *HyperClusterResourcesReconciler) kubeadmControlPlaneUpdate(hcr *hyperv1.HyperClusterResource) {
@@ -113,6 +117,9 @@ func (r *HyperClusterResourcesReconciler) kubeadmControlPlaneUpdate(hcr *hyperv1
 
 	if *kcp.Spec.Replicas != int32(hcr.Spec.MasterNum) {
 		*kcp.Spec.Replicas = int32(hcr.Spec.MasterNum)
+	}
+	if kcp.Spec.Version != hcr.Spec.Version {
+		kcp.Spec.Version = hcr.Spec.Version
 	}
 }
 
@@ -147,9 +154,12 @@ func (r *HyperClusterResourcesReconciler) requeueHyperClusterResourcesForKubeadm
 		}
 	}()
 
-	hcr.Spec.MasterNum = int(*cp.Spec.Replicas)
+	if replica := strconv.Itoa(hcr.Spec.MasterNum); replica == "0" {
+		hcr.Spec.MasterNum = int(*cp.Spec.Replicas)
+		hcr.Spec.Version = cp.Spec.Version
+	}
+
 	hcr.Status.MasterRun = int(cp.Status.Replicas)
-	hcr.Spec.Version = cp.Spec.Version
 
 	return nil
 }
@@ -185,7 +195,9 @@ func (r *HyperClusterResourcesReconciler) requeueHyperClusterResourcesForMachine
 		}
 	}()
 
-	hcr.Spec.WorkerNum = int(*md.Spec.Replicas)
+	if replica := strconv.Itoa(hcr.Spec.WorkerNum); replica == "0" {
+		hcr.Spec.WorkerNum = int(*md.Spec.Replicas)
+	}
 	hcr.Status.WorkerRun = int(md.Status.Replicas)
 
 	return nil
@@ -202,12 +214,12 @@ func (r *HyperClusterResourcesReconciler) SetupWithManager(mgr ctrl.Manager) err
 					return false
 				},
 				UpdateFunc: func(e event.UpdateEvent) bool {
-					oldhcr := e.ObjectOld.(*hyperv1.HyperClusterResource).DeepCopy()
-					newhcr := e.ObjectNew.(*hyperv1.HyperClusterResource).DeepCopy()
+					// oldhcr := e.ObjectOld.(*hyperv1.HyperClusterResource).DeepCopy()
+					// newhcr := e.ObjectNew.(*hyperv1.HyperClusterResource).DeepCopy()
 
-					if oldhcr.Spec.MasterNum != newhcr.Spec.MasterNum || oldhcr.Spec.WorkerNum != newhcr.Spec.WorkerNum {
-						return true
-					}
+					// if oldhcr.Spec.MasterNum != newhcr.Spec.MasterNum || oldhcr.Spec.WorkerNum != newhcr.Spec.WorkerNum || oldhcr.Spec.Version != newhcr.Spec.Version {
+					// 	return true
+					// }
 					return false
 				},
 				DeleteFunc: func(e event.DeleteEvent) bool {
@@ -231,12 +243,12 @@ func (r *HyperClusterResourcesReconciler) SetupWithManager(mgr ctrl.Manager) err
 		},
 		predicate.Funcs{
 			UpdateFunc: func(e event.UpdateEvent) bool {
-				oldKcp := e.ObjectOld.(*controlplanev1.KubeadmControlPlane)
-				newKcp := e.ObjectNew.(*controlplanev1.KubeadmControlPlane)
+				// oldKcp := e.ObjectOld.(*controlplanev1.KubeadmControlPlane)
+				// newKcp := e.ObjectNew.(*controlplanev1.KubeadmControlPlane)
 
-				if *oldKcp.Spec.Replicas != *newKcp.Spec.Replicas || oldKcp.Status.Replicas != newKcp.Status.Replicas || oldKcp.Spec.Version != newKcp.Spec.Version {
-					return true
-				}
+				// if oldKcp.Status.Replicas != newKcp.Status.Replicas {
+				// 	return true
+				// }
 				return false
 			},
 			CreateFunc: func(e event.CreateEvent) bool {
@@ -258,12 +270,12 @@ func (r *HyperClusterResourcesReconciler) SetupWithManager(mgr ctrl.Manager) err
 		},
 		predicate.Funcs{
 			UpdateFunc: func(e event.UpdateEvent) bool {
-				oldMd := e.ObjectOld.(*clusterv1.MachineDeployment)
-				newMd := e.ObjectNew.(*clusterv1.MachineDeployment)
+				// oldMd := e.ObjectOld.(*clusterv1.MachineDeployment)
+				// newMd := e.ObjectNew.(*clusterv1.MachineDeployment)
 
-				if *oldMd.Spec.Replicas != *newMd.Spec.Replicas || oldMd.Status.Replicas != newMd.Status.Replicas {
-					return true
-				}
+				// if oldMd.Status.Replicas != newMd.Status.Replicas {
+				// 	return true
+				// }
 				return false
 			},
 			CreateFunc: func(e event.CreateEvent) bool {
