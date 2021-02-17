@@ -34,11 +34,10 @@ import (
 
 	console "github.com/tmax-cloud/console-operator/api/v1"
 	typesv1beta1 "multi.tmax.io/apis/external/v1beta1"
-	hyperv1 "multi.tmax.io/apis/hyper/v1"
+
 	controller "multi.tmax.io/controllers"
 	clusterController "multi.tmax.io/controllers/capi"
 	federatedServiceController "multi.tmax.io/controllers/fed"
-	hypercontroller "multi.tmax.io/controllers/hyper"
 	controlplanev1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1alpha3"
 	// +kubebuilder:scaffold:imports
 )
@@ -60,8 +59,6 @@ func init() {
 	utilruntime.Must(fedmultiv1a1.AddToScheme(scheme))
 
 	utilruntime.Must(typesv1beta1.AddToScheme(scheme))
-
-	utilruntime.Must(hyperv1.AddToScheme(scheme))
 
 	utilruntime.Must(controlplanev1.AddToScheme(scheme))
 
@@ -132,22 +129,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "fed/kubefedclusterController")
 		os.Exit(1)
 	}
-	if err = (&hypercontroller.HyperClusterResourcesReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("HyperClusterResource"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HyperClusterResource")
-		os.Exit(1)
-	}
-	if err = (&hypercontroller.HyperClusterResourcesReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("HyperClusterResource"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HyperClusterResource")
-		os.Exit(1)
-	}
+
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

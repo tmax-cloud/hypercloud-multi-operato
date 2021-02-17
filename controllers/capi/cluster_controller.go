@@ -246,6 +246,35 @@ func (r *ClusterReconciler) deployRB2remote(clusterName, owner string) {
 		if err := remoteClient.Create(context.TODO(), rb); err != nil {
 			log.Error(err)
 		}
+
+		cr := &rbacv1.ClusterRole{}
+		cr.Name = "developer"
+
+		allRule := &rbacv1.PolicyRule{}
+		allRule.APIGroups = append(allRule.APIGroups, "", "apps", "autoscaling", "batch", "extensions", "policy", "networking.k8s.io", "snapshot.storage.k8s.io", "storage.k8s.io", "apiextensions.k8s.io", "metrics.k8s.io")
+		allRule.Resources = append(allRule.Resources, "*")
+		allRule.Verbs = append(allRule.Verbs, "*")
+
+		someRule := &rbacv1.PolicyRule{}
+		someRule.APIGroups = append(someRule.APIGroups, "apiregistration.k8s.io")
+		someRule.Resources = append(someRule.Resources, "*")
+		someRule.Verbs = append(someRule.Verbs, "get", "list", "watch")
+
+		cr.Rules = append(cr.Rules, *allRule, *someRule)
+
+		if err := remoteClient.Create(context.TODO(), cr); err != nil {
+			log.Error()
+		}
+
+		cr2 := &rbacv1.ClusterRole{}
+		cr2.Name = "guest"
+		allRule.Verbs = []string{"get", "list", "watch"}
+
+		cr2.Rules = append(cr2.Rules, *allRule, *someRule)
+
+		if err := remoteClient.Create(context.TODO(), cr2); err != nil {
+			log.Error()
+		}
 	}
 }
 

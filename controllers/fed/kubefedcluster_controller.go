@@ -36,7 +36,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typesv1beta1 "multi.tmax.io/apis/external/v1beta1"
-	hyperv1 "multi.tmax.io/apis/hyper/v1"
+
 	constant "multi.tmax.io/controllers/util"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	fedcore "sigs.k8s.io/kubefed/pkg/apis/core/v1beta1"
@@ -238,42 +238,6 @@ func (r *KubeFedClusterReconciler) createFcm(clusterName string) error {
 	return nil
 }
 
-func (r *KubeFedClusterReconciler) deleteHcr(key types.NamespacedName) error {
-	hcr := &hyperv1.HyperClusterResource{}
-	if err := r.Get(context.TODO(), key, hcr); err != nil {
-		return err
-	}
-
-	if err := r.Delete(context.TODO(), hcr); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *KubeFedClusterReconciler) createHcr(key types.NamespacedName, kfc *fedcore.KubeFedCluster) error {
-	hcr := &hyperv1.HyperClusterResource{}
-	hcr.Name = key.Name
-	hcr.Namespace = key.Namespace
-
-	hcr.SetOwnerReferences(append(hcr.OwnerReferences, metav1.OwnerReference{
-		APIVersion: fedcore.SchemeGroupVersion.String(),
-		Kind:       "KubeFedCluster",
-		Name:       kfc.Name,
-		UID:        kfc.UID,
-	}))
-
-	hcr.Spec.Provider = "none"
-	hcr.Spec.Version = "none"
-	hcr.Status.Ready = true
-
-	if err := r.Create(context.TODO(), hcr); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func Find(slice []typesv1beta1.Clusters, val string) (int, bool) {
 	for i, item := range slice {
 		if item.Name == val {
@@ -281,17 +245,6 @@ func Find(slice []typesv1beta1.Clusters, val string) (int, bool) {
 		}
 	}
 	return -1, false
-}
-
-func (r *KubeFedClusterReconciler) isHcr(key types.NamespacedName) error {
-	hcr := &hyperv1.HyperClusterResource{}
-	if err := r.Get(context.TODO(), key, hcr); err != nil {
-		if errors.IsNotFound(err) {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (r *KubeFedClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
