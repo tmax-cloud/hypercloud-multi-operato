@@ -1,0 +1,86 @@
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-claim-tmax-io-v1alpha1-clusterclaim
+  failurePolicy: Fail
+  name: mclusterclaim.kb.io
+  rules:
+  - apiGroups:
+    - claim.tmax.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clusterclaims
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-cluster-tmax-io-v1alpha1-clustermanager
+  failurePolicy: Fail
+  name: mclustermanager.kb.io
+  rules:
+  - apiGroups:
+    - cluster.tmax.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clustermanagers
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-claim-tmax-io-v1alpha1-clusterclaim
+  failurePolicy: Fail
+  name: vclusterclaim.kb.io
+  rules:
+  - apiGroups:
+    - claim.tmax.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - UPDATE
+    resources:
+    - clusterclaims
+- clientConfig:
+    caBundle: Cg==
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-cluster-tmax-io-v1alpha1-clustermanager
+  failurePolicy: Fail
+  name: vclustermanager.kb.io
+  rules:
+  - apiGroups:
+    - cluster.tmax.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - UPDATE
+    resources:
+    - clustermanagers

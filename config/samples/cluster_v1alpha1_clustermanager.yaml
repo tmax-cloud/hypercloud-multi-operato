@@ -1,0 +1,7 @@
+apiVersion: cluster.tmax.io/v1alpha1
+kind: ClusterManager
+metadata:
+  name: clustermanager-sample
+spec:
+  # Add fields here
+  foo: bar

@@ -1,0 +1,162 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: clustermanagers.cluster.tmax.io
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.provider
+    description: provider
+    name: Provider
+    type: string
+  - JSONPath: .spec.version
+    description: k8s version
+    name: Version
+    type: string
+  - JSONPath: .status.ready
+    description: is running
+    name: Ready
+    type: string
+  - JSONPath: .spec.masterNum
+    description: replica number of master
+    name: MasterNum
+    type: string
+  - JSONPath: .status.masterRun
+    description: running of master
+    name: MasterRun
+    type: string
+  - JSONPath: .spec.workerNum
+    description: replica number of worker
+    name: WorkerNum
+    type: string
+  - JSONPath: .status.workerRun
+    description: running of worker
+    name: WorkerRun
+    type: string
+  group: cluster.tmax.io
+  names:
+    kind: ClusterManager
+    listKind: ClusterManagerList
+    plural: clustermanagers
+    shortNames:
+    - clm
+    singular: clustermanager
+  scope: Cluster
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: ClusterManager is the Schema for the clustermanagers API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        fakeMetadata:
+          description: 'EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN! NOTE:
+            json tags are required.  Any new fields you add must have json tags for
+            the fields to be serialized.'
+          properties:
+            fakename:
+              type: string
+          type: object
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: ClusterManagerSpec defines the desired state of ClusterManager
+          properties:
+            masterNum:
+              description: The number of master node
+              type: integer
+            masterType:
+              description: The type of VM for master node
+              type: string
+            provider:
+              description: The name of cloud provider where VM is created
+              type: string
+            region:
+              description: The region where VM is working
+              type: string
+            sshKey:
+              description: The ssh key info to access VM
+              type: string
+            version:
+              description: The version of kubernetes
+              type: string
+            workerNum:
+              description: The number of worker node
+              type: integer
+            workerType:
+              description: The type of VM for worker node
+              type: string
+          type: object
+        status:
+          description: ClusterManagerStatus defines the observed state of ClusterManager
+          properties:
+            groups:
+              additionalProperties:
+                type: string
+              type: object
+            masterRun:
+              type: integer
+            members:
+              additionalProperties:
+                type: string
+              type: object
+            nodes:
+              items:
+                properties:
+                  ip:
+                    type: string
+                  isMaster:
+                    type: boolean
+                  name:
+                    type: string
+                  resources:
+                    items:
+                      properties:
+                        capacity:
+                          type: string
+                        type:
+                          type: string
+                        usage:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              type: array
+            owner:
+              additionalProperties:
+                type: string
+              type: object
+            provider:
+              type: string
+            ready:
+              type: boolean
+            version:
+              type: string
+            workerRun:
+              type: integer
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

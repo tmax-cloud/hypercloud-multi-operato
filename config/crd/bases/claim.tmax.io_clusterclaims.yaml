@@ -1,0 +1,117 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: clusterclaims.claim.tmax.io
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.phase
+    name: Status
+    type: string
+  - JSONPath: .status.reason
+    name: Reason
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
+  group: claim.tmax.io
+  names:
+    kind: ClusterClaim
+    listKind: ClusterClaimList
+    plural: clusterclaims
+    shortNames:
+    - cc
+    singular: clusterclaim
+  scope: Cluster
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: ClusterClaim is the Schema for the clusterclaims API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: ClusterClaimSpec defines the desired state of ClusterClaim
+          properties:
+            clusterName:
+              description: The name of the cluster to be created
+              type: string
+            masterNum:
+              description: The number of master node
+              type: integer
+            masterType:
+              description: The type of VM for master node
+              type: string
+            provider:
+              description: The name of cloud provider where VM is created
+              type: string
+            region:
+              description: The region where VM is working
+              type: string
+            sshKey:
+              description: The ssh key info to access VM
+              type: string
+            version:
+              description: The version of kubernetes
+              type: string
+            workerNum:
+              description: The number of worker node
+              type: integer
+            workerType:
+              description: The type of VM for worker node
+              type: string
+          required:
+          - clusterName
+          - masterNum
+          - masterType
+          - provider
+          - region
+          - sshKey
+          - version
+          - workerNum
+          - workerType
+          type: object
+        status:
+          description: ClusterClaimStatus defines the observed state of ClusterClaim
+          properties:
+            message:
+              type: string
+            phase:
+              enum:
+              - Awaiting
+              - Admitted
+              - Success
+              - Rejected
+              - Error
+              - Deleted
+              type: string
+            reason:
+              type: string
+          type: object
+      type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

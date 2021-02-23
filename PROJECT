@@ -1,0 +1,15 @@
+domain: tmax.io
+layout: go.kubebuilder.io/v2
+multigroup: true
+projectName: hypercloud-multi-operator
+repo: github.com/tmax-cloud/hypercloud-multi-operator
+resources:
+- group: claim
+  kind: ClusterClaim
+  version: v1alpha1
+- group: cluster
+  kind: ClusterManager
+  version: v1alpha1
+version: 3-alpha
+plugins:
+  go.sdk.operatorframework.io/v2-alpha: {}
