@@ -817,7 +817,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: tmaxcloudck/hypercloud-multi-operator:vte
+        image: tmaxcloudck/hypercloud-multi-operator:b5.0.0.1
         name: manager
         ports:
         - containerPort: 9443
